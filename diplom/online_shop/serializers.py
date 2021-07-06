@@ -64,7 +64,7 @@ class OrdersSerializer(serializers.ModelSerializer):
     class Meta:
         model = Orders
         fields = ('id', 'user', 'status', 'cart', 'price_cart',
-                  'created_at', 'updated_at',)
+                  'created_at', 'updated_at', 'positions',)
 
     def create(self, validated_data):
         """Метод для создания"""
@@ -124,7 +124,9 @@ class OrdersSerializer(serializers.ModelSerializer):
 class ProductCollectionsProductsSerializer(serializers.Serializer):
     """Serializer для products в подборках """
 
-    product = serializers.PrimaryKeyRelatedField(queryset=Products.objects.all(), required=True, )
+    product = serializers.PrimaryKeyRelatedField(queryset=Products.objects.all(), required=True)
+    name = serializers.CharField(source='products.name', required=True)
+    price = serializers.CharField(source='products.price', required=True)
 
 
 class ProductCollectionsSerializer(serializers.Serializer):
@@ -138,14 +140,13 @@ class ProductCollectionsSerializer(serializers.Serializer):
 
     def create(self, validated_data):
         products = validated_data.pop('products')
-        print(validated_data)
         for item in products:
             Products(id=item['product'].id).save()
 
         return super().create(validated_data)
 
     def validate(self, attrs):
-        products = attrs.get('products')
+        products = attrs.get('products_list')
         if self.context['view'].action == 'create':
             if not products:
                 raise serializers.ValidationError("Не указаны товары")
@@ -154,7 +155,7 @@ class ProductCollectionsSerializer(serializers.Serializer):
                 raise serializers.ValidationError("Дублируются позиции в подборке")
 
     def update(self, instance, validated_data):
-        products = validated_data.get('products')
+        products = validated_data.get('products_list')
         all_products = instance.products.all()
         for item in products:
             if item['product'] not in all_products:

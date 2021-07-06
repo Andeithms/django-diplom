@@ -19,8 +19,12 @@ def admin_api_client(django_user_model):
 
 
 @pytest.fixture
-def auth_api_client(django_user_model):
-    user = django_user_model.objects.create(username='user', password='password', is_staff=False)
+def user(django_user_model):
+    return django_user_model.objects.create(username='user', password='password', is_staff=False)
+
+
+@pytest.fixture
+def auth_api_client(user):
     us_token, us_created = Token.objects.get_or_create(user=user)
     client = APIClient()
     client.credentials(HTTP_AUTHORIZATION=f'Token {us_token}')
@@ -44,16 +48,17 @@ def product_reviews_factory(user, products_factory):
 
 
 @pytest.fixture
-def orders_factory():
+def orders_factory(user):
     def func(**kwargs):
-        return baker.make("Orders", _quantity=8, **kwargs)
+        return baker.make("Orders", _quantity=8, **kwargs, make_m2m=True, user=user)
 
     return func
 
 
 @pytest.fixture
-def product_collections_factory():
+def product_collections_factory(user):
     def func(**kwargs):
         return baker.make("ProductCollections", make_m2m=True, _quantity=3, **kwargs)
 
     return func
+

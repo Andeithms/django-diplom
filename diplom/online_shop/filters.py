@@ -18,13 +18,13 @@ class ProductFilter(filters.FilterSet):
 class ProductReviewsFilter(filters.FilterSet):
     """ Фильтр отзывов """
 
-    creator_id = 'creator__id'
+    user_id = 'user__id'
     product_id = filters.NumberFilter(field_name='product_id')
     created_at = filters.DateFromToRangeFilter(field_name='release_date')
 
     class Meta:
         model = ProductReviews
-        fields = ('creator', 'product_id', 'created_at',)
+        fields = ('user', 'product_id', 'created_at',)
 
 
 class OrdersFilter(filters.FilterSet):

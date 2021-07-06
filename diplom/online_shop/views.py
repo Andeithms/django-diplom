@@ -1,11 +1,11 @@
 from django.core.exceptions import PermissionDenied
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.viewsets import ModelViewSet
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from .models import Products, Orders, ProductReviews, ProductCollections
 from .serializers import ProductSerializer, ProductReviewsSerializers, OrdersSerializer, ProductCollectionsSerializer
 from .filters import *
-from .permissions import AccessPermission, AdminAccessPermission
+from .permissions import AccessPermission
 
 
 class ProductsViewSet(ModelViewSet):
@@ -15,16 +15,13 @@ class ProductsViewSet(ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_class = ProductFilter
 
-    def get_queryset(self):
-        return Products.objects.all()
-
     def get_permissions(self):
         if self.action in ["create", "update", "partial_update", "destroy"]:
-            return [IsAuthenticated(), AdminAccessPermission()]
+            return [IsAuthenticated(), IsAdminUser()]
         return []
 
-    # def perform_create(self, serializer):
-
+    def get_queryset(self):
+        return Products.objects.all()
 
 
 class OrdersViewSet(ModelViewSet):
@@ -35,10 +32,12 @@ class OrdersViewSet(ModelViewSet):
     filterset_class = OrdersFilter
 
     def get_queryset(self):
+        if self.request.user.is_staff:
+            return Orders.objects.prefetch_related('positions').all()
         return Orders.objects.prefetch_related('positions').filter(user=self.request.user)
 
     def get_permissions(self):
-        if self.action in ["create", "update", "partial_update", "destroy"]:
+        if self.action in ["create", "update", "partial_update", "destroy", ]:
             return [IsAuthenticated(), AccessPermission()]
         return []
 
@@ -62,7 +61,7 @@ class ProductReviewsViewSet(ModelViewSet):
         return []
 
     def create(self, request, *args, **kwargs):
-        super().create(request, *args, **kwargs)
+        return super().create(request, *args, **kwargs)
 
 
 class ProductCollectionsViewSet(ModelViewSet):

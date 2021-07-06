@@ -23,7 +23,7 @@ class Products(models.Model):
 class ProductReviews(models.Model):
     """ Отзывы """
 
-    creator = models.ForeignKey(
+    user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.DO_NOTHING,
     )
@@ -58,6 +58,7 @@ class Orders(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.DO_NOTHING,
+        related_name='user',
     )
     cart = models.ManyToManyField(Products, through='ProductOrder', verbose_name='Корзина')
     status = models.CharField(max_length=128,
@@ -81,7 +82,7 @@ class ProductOrder(models.Model):
 
     product = models.ForeignKey(Products, on_delete=models.CASCADE)
     quantity = models.IntegerField(validators=[MinValueValidator(1)])
-    order = models.ForeignKey(Orders, on_delete=models.CASCADE)
+    order = models.ForeignKey(Orders, on_delete=models.CASCADE, related_name='positions')
 
 
 class ProductCollections(models.Model):
@@ -105,4 +106,4 @@ class ProductCollectionsProducts(models.Model):
     """ Промежуточная таблица подборки-товары """
 
     product = models.ForeignKey(Products, on_delete=models.CASCADE)
-    collection = models.ForeignKey(ProductCollections, on_delete=models.CASCADE)
+    collection = models.ForeignKey(ProductCollections, on_delete=models.CASCADE, related_name='products_list')
