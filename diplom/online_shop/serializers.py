@@ -22,7 +22,7 @@ class ProductSerializer(serializers.ModelSerializer):
                   'created_at', 'updated_at',)
 
 
-class ProductReviewsSerializers(serializers.Serializer):
+class ProductReviewsSerializers(serializers.ModelSerializer):
     """Serializer для отзывов """
 
     user = serializers.IntegerField(read_only=True, source='user.id')
@@ -38,14 +38,16 @@ class ProductReviewsSerializers(serializers.Serializer):
         user = self.context['request'].user
 
         if self.context['view'].action == 'create':
-            if ProductReviews.objects.filter(user=user, product=attrs['product']):
+            if ProductReviews.objects.filter(user=user, product_id=attrs['product_id']):
                 raise ValidationError(f'Нельзя оставлять более одного отзыва к каждому товару')
             attrs['user'] = user
 
         elif self.context['view'].action in ['update', 'partial_update']:
             fields = ('text', 'rate',)
-            if set(attrs.keys()) != fields:
+            if not set(attrs.keys()).issubset(fields):
                 raise ValidationError(f'Изменить можно только поля {fields}')
+
+        return attrs
 
 
 class ProductOrderSerializer(serializers.Serializer):
@@ -129,7 +131,7 @@ class ProductCollectionsProductsSerializer(serializers.Serializer):
     price = serializers.CharField(source='products.price', required=True)
 
 
-class ProductCollectionsSerializer(serializers.Serializer):
+class ProductCollectionsSerializer(serializers.ModelSerializer):
     """Serializer для подборок """
 
     products = ProductCollectionsProductsSerializer(many=True)

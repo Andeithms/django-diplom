@@ -1,7 +1,8 @@
-import pytest
 import random
-from django.urls import reverse
+
+import pytest
 import rest_framework.status as status
+from django.urls import reverse
 
 
 @pytest.mark.django_db
@@ -33,9 +34,9 @@ def test_list_review(api_client, product_reviews_factory):
 def test_user_review(auth_api_client, product_reviews_factory):
     """ Проверка фильтрации по пользователю"""
     product_reviews = product_reviews_factory()
-    creator_id = random.choice(product_reviews).creator_id
+    creator_id = random.choice(product_reviews).user_id
     url = reverse("product-reviews-list")
-    resp = auth_api_client.get(url, data={"creator": creator_id})
+    resp = auth_api_client.get(url, data={"user": creator_id})
     resp_json = resp.json()
 
     assert resp.status_code == status.HTTP_200_OK
@@ -71,17 +72,16 @@ def test_id_product_review(auth_api_client, product_reviews_factory):
 @pytest.mark.django_db
 def test_create_review_auth(auth_api_client, products_factory, product_reviews_factory):
     """ Проверка на добавление отзыва авторизованным пользователем"""
-    product_reviews = product_reviews_factory()[0]
     product = products_factory()[0]
 
-    url = reverse("product-reviews-detail", args=[product_reviews.id])
-    resp = auth_api_client.post(url, data={"product": product.id,
-                                           "text": "отзыв",
-                                           "rate": 1}, format="json")
+    url = reverse("product-reviews-list")
+    resp = auth_api_client.post(
+        url, data={"text": "отзыв", "rate": 1, "product_id":product.id}, format="json"
+    )
     resp_json = resp.json()
 
-    assert resp.status_code == status.HTTP_201_CREATED  # 405
-    assert resp_json['text'] == 'отзыв' and resp_json["product"] == product.id
+    assert resp.status_code == status.HTTP_201_CREATED
+    assert resp_json["text"] == "отзыв" and resp_json["product_id"] == product.id
 
 
 @pytest.mark.django_db
@@ -93,9 +93,10 @@ def test_update_review_auth(auth_api_client, product_reviews_factory, user):
     url = reverse("product-reviews-detail", args=[product_reviews.id])
     resp = auth_api_client.patch(url, data={"text": product_reviews.text})
     resp_json = resp.json()
+    print(resp_json)
 
     assert resp.status_code == status.HTTP_200_OK  # 400
-    assert resp_json['text'] == product_reviews.text
+    assert resp_json["text"] == product_reviews.text
 
 
 @pytest.mark.django_db
