@@ -35,7 +35,7 @@ def auth_api_client(user):
 @pytest.fixture
 def products_factory():
     def func(**kwargs):
-        return baker.make("Products", _quantity=20, price=random.randint(1, 10000),**kwargs)
+        return baker.make("Products", _quantity=20, price=random.randint(1, 10000), **kwargs)
 
     return func
 
@@ -59,7 +59,7 @@ def orders_factory(user):
 @pytest.fixture
 def product_collections_factory(user):
     def func(**kwargs):
-        return baker.make("ProductCollections", make_m2m=True, _quantity=3, **kwargs)
+        return baker.make("ProductCollections", make_m2m=False, _quantity=3, user=user, **kwargs)
 
     return func
 

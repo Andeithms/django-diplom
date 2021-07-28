@@ -135,7 +135,7 @@ class ProductCollectionsProductsSerializer(serializers.Serializer):
 class ProductCollectionsSerializer(serializers.ModelSerializer):
     """Serializer для подборок """
 
-    products = ProductCollectionsProductsSerializer(many=True)
+    products = ProductCollectionsProductsSerializer(many=True, required=True)
     user = serializers.IntegerField(read_only=True, source='user.id')
 
     class Meta:
@@ -143,7 +143,7 @@ class ProductCollectionsSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     def create(self, validated_data):
-        products = validated_data.pop('products')
+        products = validated_data.pop('products_list')
         for item in products:
             Products(id=item['product'].id).save()
 
@@ -151,7 +151,7 @@ class ProductCollectionsSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         products = attrs.get('products_list')
-        attrs["user"] = self.request.user
+        attrs["user"] = self.context['request'].user
         if self.context['view'].action == 'create':
             if not products:
                 raise serializers.ValidationError("Не указаны товары")

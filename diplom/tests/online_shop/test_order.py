@@ -69,20 +69,20 @@ def test_date_create_order(auth_api_client, orders_factory):
     resp_json = resp.json()
 
     assert resp.status_code == status.HTTP_200_OK
-    # assert resp_json[0]["created_at"] == created_at
+    assert resp_json[0]["created_at"] > str(created_at)
 
 
 @pytest.mark.django_db
 def test_date_update_order(auth_api_client, orders_factory):
     """ Проверка фильтрации по дате обновления"""
     orders = orders_factory()
-    update_at = random.choice(orders).updated_at
+    updated_at = random.choice(orders).updated_at
     url = reverse("orders-list")
-    resp = auth_api_client.get(url, data={"updated_at": update_at}, format="json")
+    resp = auth_api_client.get(url, data={"updated_at": updated_at}, format="json")
     resp_json = resp.json()
 
     assert resp.status_code == status.HTTP_200_OK
-    # assert resp_json[0]["update_at"] == update_at
+    assert resp_json[0]["updated_at"] > str(updated_at)
 
 
 @pytest.mark.django_db
@@ -95,7 +95,7 @@ def test_product_order(auth_api_client, orders_factory, products_factory):
     resp_json = resp.json()
 
     assert resp.status_code == status.HTTP_200_OK
-    # assert resp_json[0]["id"] == orders.id
+    assert resp_json[0]["id"] == orders[0].id
 
 
 @pytest.mark.django_db
