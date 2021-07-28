@@ -54,8 +54,9 @@ def test_create_collection_user(auth_api_client, product_collections_factory, pr
 
     resp = auth_api_client.post(url, data={"name": "подборка машин",
                                            "text": "audi",
-                                           "products": product.id}, format="json")
+                                           "products": [product.id]}, format="json")
 
+    print(resp.json())
     assert resp.status_code == status.HTTP_401_UNAUTHORIZED
 
 
@@ -80,4 +81,4 @@ def test_delete_collection_user(auth_api_client, product_collections_factory):
     url = reverse("product-collections-detail", args=[collections[index].id])
     resp = auth_api_client.delete(url)
 
-    assert resp.status_code == status.HTTP_401_UNAUTHORIZED
+    assert resp.status_code == status.HTTP_403_FORBIDDEN

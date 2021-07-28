@@ -41,9 +41,6 @@ class OrdersViewSet(ModelViewSet):
             return [IsAuthenticated(), AccessPermission()]
         return []
 
-    def create(self, request, *args, **kwargs):
-        super().create(request, *args, **kwargs)
-
 
 class ProductReviewsViewSet(ModelViewSet):
     """ViewSet для отзывов."""
@@ -60,9 +57,6 @@ class ProductReviewsViewSet(ModelViewSet):
             return [IsAuthenticated(), AccessPermission()]
         return []
 
-    def create(self, request, *args, **kwargs):
-        return super().create(request, *args, **kwargs)
-
 
 class ProductCollectionsViewSet(ModelViewSet):
     """ViewSet для подборок."""
@@ -78,5 +72,3 @@ class ProductCollectionsViewSet(ModelViewSet):
             return [IsAuthenticated(), AccessPermission()]
         return []
 
-    def create(self, request, *args, **kwargs):
-        super().create(request, *args, **kwargs)

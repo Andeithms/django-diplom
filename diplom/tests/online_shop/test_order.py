@@ -76,9 +76,9 @@ def test_date_create_order(auth_api_client, orders_factory):
 def test_date_update_order(auth_api_client, orders_factory):
     """ Проверка фильтрации по дате обновления"""
     orders = orders_factory()
-    update_at = random.choice(orders).update_at
+    update_at = random.choice(orders).updated_at
     url = reverse("orders-list")
-    resp = auth_api_client.get(url, data={"update_at": update_at}, format="json")
+    resp = auth_api_client.get(url, data={"updated_at": update_at}, format="json")
     resp_json = resp.json()
 
     assert resp.status_code == status.HTTP_200_OK
@@ -105,10 +105,10 @@ def test_create_order_auth(auth_api_client, orders_factory, products_factory):
     product_id = random.choice(products_factory()).id
 
     url = reverse("orders-list")
-    resp = auth_api_client.post(url, data={"positions": [{"product_id": product_id, "quantity": 1}]}, format="json")
+    resp = auth_api_client.post(url, data={"positions": [{"product": product_id, "quantity": 1}]}, format="json")
     resp_json = resp.json()
 
-    assert resp.status_code == status.HTTP_201_CREATED  # 400
+    assert resp.status_code == status.HTTP_201_CREATED
 
 
 @pytest.mark.django_db
@@ -128,21 +128,18 @@ def test_create_order_not_auth(api_client, orders_factory, products_factory):
 def test_update_status_order_auth(auth_api_client, orders_factory):
     """ Проверка обновления заказа авторизованным пользователем"""
     order = orders_factory()[0]
-    product_id = order.positions.product_id
     url = reverse("orders-detail", args=[order.id])
+    resp = auth_api_client.patch(url, data={"status":"DONE"}, format="json")
 
-    resp = auth_api_client.patch(url, data={"positions": [{"product_id": product_id, "quantity": 2}]}, format="json")
-
-    assert resp.status_code == status.HTTP_401_UNAUTHORIZED
+    assert resp.status_code == status.HTTP_400_BAD_REQUEST
 
 
 @pytest.mark.django_db
 def test_update_status_order_admin(admin_api_client, orders_factory):
     """ Проверка обновления заказа админом"""
     order = orders_factory()[0]
-    product_id = order.positions.product_id
     url = reverse("orders-detail", args=[order.id])
-    resp = admin_api_client.patch(url, data={"positions": [{"product_id": product_id, "quantity": 2}]}, format="json")
+    resp = admin_api_client.patch(url, data={"status":"DONE"}, format="json")
 
     assert resp.status_code == status.HTTP_200_OK
 

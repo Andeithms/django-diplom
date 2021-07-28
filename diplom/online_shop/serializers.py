@@ -22,7 +22,7 @@ class ProductSerializer(serializers.ModelSerializer):
                   'created_at', 'updated_at',)
 
 
-class ProductReviewsSerializers(serializers.Serializer):
+class ProductReviewsSerializers(serializers.ModelSerializer):
     """Serializer для отзывов """
 
     user = serializers.IntegerField(read_only=True, source='user.id')
@@ -38,14 +38,16 @@ class ProductReviewsSerializers(serializers.Serializer):
         user = self.context['request'].user
 
         if self.context['view'].action == 'create':
-            if ProductReviews.objects.filter(user=user, product=attrs['product']):
+            if ProductReviews.objects.filter(user=user, product_id=attrs['product_id']):
                 raise ValidationError(f'Нельзя оставлять более одного отзыва к каждому товару')
             attrs['user'] = user
 
         elif self.context['view'].action in ['update', 'partial_update']:
             fields = ('text', 'rate',)
-            if set(attrs.keys()) != fields:
+            if not set(attrs.keys()).issubset(fields):
                 raise ValidationError(f'Изменить можно только поля {fields}')
+
+        return attrs
 
 
 class ProductOrderSerializer(serializers.Serializer):
@@ -63,32 +65,32 @@ class OrdersSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Orders
-        fields = ('id', 'user', 'status', 'cart', 'price_cart',
-                  'created_at', 'updated_at', 'positions',)
+        fields = ('id', 'status', 'cart', 'created_at', 'updated_at', 'positions')
 
     def create(self, validated_data):
         """Метод для создания"""
 
-        validated_data["creator"] = self.context["request"].user
+        validated_data["user"] = self.context["request"].user
         positions = validated_data.pop('positions')
         for item in positions:
-            ProductOrder(product=item['product'].id,
+            ProductOrder(product=item['product'],
                          quantity=item['quantity'],
                          order=super().create(validated_data)
                          ).save()
 
         return super().create(validated_data)
 
-    def validate_positions(self, value):
+    def validate(self, value):
         user = self.context['request'].user
         if self.context['view'].action == 'create':
-            if not value:
+            positions = value["positions"]
+            if not positions:
                 raise serializers.ValidationError("Не указаны позиции заказа")
-            product_ids = [item["product"].id for item in value]
+            product_ids = [item["product"].id for item in positions]
             if len(product_ids) != len(set(product_ids)):
                 raise serializers.ValidationError("Дублируются позиции в заказе")
 
-            price_cart = sum([item['product']['id'].price * item['quantity'] for item in value])
+            price_cart = sum(item['product'].price * item['quantity'] for item in positions)
             value['user'] = user
             value['price_cart'] = price_cart
 
@@ -97,13 +99,13 @@ class OrdersSerializer(serializers.ModelSerializer):
                 fields = ('status', 'positions',)
             else:
                 fields = ('positions',)
-            if set(value.keys()) != fields:
+            if not set(value.keys()).issubset(fields):
                 raise ValidationError(f'Изменить можно только поля {fields}')
 
         return value
 
     def update(self, instance, validated_data):
-        positions = validated_data.get('positions')
+        positions = validated_data.get('positions', [])
         for item in positions:
             try:
                 cart = ProductOrder.objects.get(product_id=item['product']['id'].id,
@@ -115,8 +117,9 @@ class OrdersSerializer(serializers.ModelSerializer):
                 self.create(validated_data)
 
         value = ProductOrder.objects.filter(order=instance)
-        price_cart = sum([item['product']['id'].price * item['quantity'] for item in value])
-        validated_data['price_cart'] = price_cart
+        price_cart = sum([item.product.price * item.quantity for item in value])
+        if price_cart > 0:
+            validated_data['price_cart'] = price_cart
 
         return super().update(instance, validated_data)
 
@@ -129,10 +132,11 @@ class ProductCollectionsProductsSerializer(serializers.Serializer):
     price = serializers.CharField(source='products.price', required=True)
 
 
-class ProductCollectionsSerializer(serializers.Serializer):
+class ProductCollectionsSerializer(serializers.ModelSerializer):
     """Serializer для подборок """
 
     products = ProductCollectionsProductsSerializer(many=True)
+    user = serializers.IntegerField(read_only=True, source='user.id')
 
     class Meta:
         model = ProductCollections
@@ -147,12 +151,14 @@ class ProductCollectionsSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         products = attrs.get('products_list')
+        attrs["user"] = self.request.user
         if self.context['view'].action == 'create':
             if not products:
                 raise serializers.ValidationError("Не указаны товары")
             product_ids = [item["product"].id for item in products]
             if len(product_ids) != len(set(product_ids)):
                 raise serializers.ValidationError("Дублируются позиции в подборке")
+        return attrs
 
     def update(self, instance, validated_data):
         products = validated_data.get('products_list')

@@ -88,6 +88,10 @@ class ProductOrder(models.Model):
 class ProductCollections(models.Model):
     """ Подборки """
 
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.DO_NOTHING,
+    )
     name = models.CharField(max_length=128, verbose_name='Название подборки')
     text = models.TextField()
     products = models.ManyToManyField(Products, through='ProductCollectionsProducts')

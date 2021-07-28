@@ -1,4 +1,5 @@
 import pytest
+import random
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient
 from model_bakery import baker
@@ -34,7 +35,7 @@ def auth_api_client(user):
 @pytest.fixture
 def products_factory():
     def func(**kwargs):
-        return baker.make("Products", _quantity=20, **kwargs)
+        return baker.make("Products", _quantity=20, price=random.randint(1, 10000),**kwargs)
 
     return func
 
@@ -50,7 +51,7 @@ def product_reviews_factory(user, products_factory):
 @pytest.fixture
 def orders_factory(user):
     def func(**kwargs):
-        return baker.make("Orders", _quantity=8, **kwargs, make_m2m=True, user=user)
+        return baker.make("Orders", _quantity=8, **kwargs, make_m2m=False, user=user)
 
     return func
 
